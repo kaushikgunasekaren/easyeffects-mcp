@@ -18,7 +18,7 @@ Ask things like:
 ## Install
 
 ```bash
-git clone https://github.com/<your-username>/easyeffects-mcp.git
+git clone https://github.com/kaushikgunasekaren/easyeffects-mcp.git
 cd easyeffects-mcp
 uv sync
 ```
@@ -46,7 +46,7 @@ Or run straight from GitHub without cloning:
 
 ```json
 "command": "uvx",
-"args": ["--from", "git+https://github.com/<your-username>/easyeffects-mcp", "easyeffects-mcp"]
+"args": ["--from", "git+https://github.com/kaushikgunasekaren/easyeffects-mcp", "easyeffects-mcp"]
 ```
 
 ## Tools
