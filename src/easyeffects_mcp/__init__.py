@@ -1,0 +1,1 @@
+"""Easy Effects MCP server."""

@@ -1,0 +1,26 @@
+[project]
+name = "easyeffects-mcp"
+version = "0.1.0"
+description = "MCP server for controlling Easy Effects (PipeWire audio effects) from AI assistants"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kaushik Gunasekaren" }]
+requires-python = ">=3.10"
+keywords = ["mcp", "easyeffects", "pipewire", "audio", "equalizer", "linux"]
+classifiers = [
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = ["mcp>=2.0"]
+
+[project.scripts]
+easyeffects-mcp = "easyeffects_mcp.server:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
