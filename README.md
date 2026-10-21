@@ -1,6 +1,8 @@
 # easyeffects-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that lets AI assistants (Claude Code, Claude Desktop, etc.) control [Easy Effects](https://github.com/wwmm/easyeffects), the PipeWire audio effects app for Linux.
+[![test](https://github.com/kaushikgunasekaren/easyeffects-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/kaushikgunasekaren/easyeffects-mcp/actions/workflows/test.yml)
+
+An [MCP](https://modelcontextprotocol.io) server that lets AI assistants (Claude Code, Claude Desktop, Cursor, VS Code, etc.) control [Easy Effects](https://github.com/wwmm/easyeffects), the PipeWire audio effects app for Linux.
 
 Ask things like:
 
@@ -12,42 +14,57 @@ Ask things like:
 
 ## Requirements
 
-- Linux with **Easy Effects 8.0 or newer** running (it talks to the `EasyEffectsServer` control socket that 8.x provides; 7.x is not supported)
-- Python 3.10+ and [uv](https://docs.astral.sh/uv/)
+- Linux with Easy Effects running (native package or Flatpak)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (it installs Python 3.10+ for you if needed)
+
+| Easy Effects version | What works |
+|---|---|
+| **8.0+** (Arch, Fedora, Flatpak) | Everything |
+| **7.x** (e.g. Ubuntu 24.04, Debian 12) | Global bypass and presets only, through the `easyeffects` command line. EQ and plugin settings need 8.0+, which you can get from [Flathub](https://flathub.org/apps/com.github.wwmm.easyeffects). |
+
+Check your version with `easyeffects --version` (or `flatpak run com.github.wwmm.easyeffects --version`).
 
 ## Install
 
-```bash
-git clone https://github.com/kaushikgunasekaren/easyeffects-mcp.git
-cd easyeffects-mcp
-uv sync
+You don't need to clone anything. Point your MCP client at:
+
+```
+uvx --from git+https://github.com/kaushikgunasekaren/easyeffects-mcp easyeffects-mcp
 ```
 
 ### Claude Code
 
 ```bash
-claude mcp add easyeffects --scope user -- uv --directory /path/to/easyeffects-mcp run easyeffects-mcp
+claude mcp add easyeffects --scope user -- uvx --from git+https://github.com/kaushikgunasekaren/easyeffects-mcp easyeffects-mcp
 ```
 
-### Claude Desktop / other MCP clients
+### Claude Desktop, Cursor, Windsurf and other JSON-configured clients
 
 ```json
 {
   "mcpServers": {
     "easyeffects": {
-      "command": "uv",
-      "args": ["--directory", "/path/to/easyeffects-mcp", "run", "easyeffects-mcp"]
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/kaushikgunasekaren/easyeffects-mcp", "easyeffects-mcp"]
     }
   }
 }
 ```
 
-Or run straight from GitHub without cloning:
+### VS Code (`.vscode/mcp.json`)
 
 ```json
-"command": "uvx",
-"args": ["--from", "git+https://github.com/kaushikgunasekaren/easyeffects-mcp", "easyeffects-mcp"]
+{
+  "servers": {
+    "easyeffects": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/kaushikgunasekaren/easyeffects-mcp", "easyeffects-mcp"]
+    }
+  }
+}
 ```
+
+`uvx` caches the install. To pick up a newer version, run `uv cache clean easyeffects-mcp` and restart your client.
 
 ## Tools
 
@@ -71,18 +88,22 @@ Or run straight from GitHub without cloning:
 
 ## Limitations
 
-- Adding or removing plugins from the chain isn't exposed by Easy Effects' control socket — do that in the app (or save a preset with the plugins you want and load it).
+- Adding or removing plugins from the chain isn't exposed by Easy Effects' control socket. Do that in the app, or save a preset with the plugins you want and load it.
 - Live property changes aren't saved into a preset until you save it in Easy Effects.
 
-## Configuration
+## Troubleshooting
 
-| Env var | Purpose |
-|---|---|
-| `EASYEFFECTS_SOCKET` | Override the control socket path (default `$XDG_RUNTIME_DIR/EasyEffectsServer`, Flatpak paths are also checked) |
+**"control socket not found"**: Easy Effects isn't running. Start it in the background with `easyeffects --service-mode -w` (Flatpak: `flatpak run com.github.wwmm.easyeffects --service-mode -w`). Enabling "Launch on system startup" in its settings keeps it running.
+
+**"error_plugin_not_found"**: that plugin isn't in the chain. Ask for `get_status` to see which plugins are loaded, and add the plugin in the Easy Effects window.
+
+**Socket in an unusual place**: set `EASYEFFECTS_SOCKET` to its path in your MCP client's `env` block.
 
 ## Development
 
 ```bash
+git clone https://github.com/kaushikgunasekaren/easyeffects-mcp.git
+cd easyeffects-mcp
 uv sync
 uv run pytest
 npx @modelcontextprotocol/inspector uv run easyeffects-mcp   # MCP Inspector

@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel, Field
 
-from .client import EasyEffectsClient, EasyEffectsError, split_plugin_key
+from .client import EasyEffectsClient, EasyEffectsError, SocketUnavailable, split_plugin_key
 
 Pipeline = Literal["input", "output"]
 Channel = Literal["both", "left", "right"]
@@ -58,14 +58,20 @@ def _channels(channel: Channel) -> list[str]:
 @mcp.tool()
 def get_status() -> dict:
     """Overview: global bypass, mic monitoring, audio sharing, devices, last loaded presets and active plugin chains."""
-    return {
+    status: dict = {
         "global_bypass": client.get_global_bypass(),
-        "microphone_monitoring": client.get_microphone_monitoring(),
-        "audio_sharing": client.get_audio_sharing(),
-        "devices": client.devices(),
         "last_loaded_preset": {p: client.last_loaded_preset(p) or None for p in ("input", "output")},
-        "plugins": {p: client.active_plugins(p) for p in ("input", "output")},
+        "flatpak": client.install.flatpak,
     }
+    try:
+        status["microphone_monitoring"] = client.get_microphone_monitoring()
+        status["audio_sharing"] = client.get_audio_sharing()
+    except SocketUnavailable:
+        status["note"] = "Control socket unavailable (Easy Effects older than 8.0?): only bypass and presets work."
+        return status
+    status["devices"] = client.devices()
+    status["plugins"] = {p: client.active_plugins(p) for p in ("input", "output")}
+    return status
 
 
 @mcp.tool()
@@ -118,8 +124,8 @@ def load_preset(pipeline: Pipeline, name: str) -> str:
 @mcp.tool()
 def read_preset(pipeline: Pipeline, name: str) -> dict:
     """Return the JSON contents of a saved preset file."""
-    path = client.preset_dir(pipeline) / f"{name}.json"
-    if not path.is_file():
+    path = client.find_preset(pipeline, name)
+    if path is None:
         raise EasyEffectsError(f"No {pipeline} preset named {name!r}")
     return json.loads(path.read_text())
 
